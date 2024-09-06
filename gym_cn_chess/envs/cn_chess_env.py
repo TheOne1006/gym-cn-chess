@@ -15,7 +15,7 @@ class CnChessEnv(gym.Env):
     
     def __init__(self, render_mode=None):
         # 这定义了缓存的步数，用于存储最近6步的棋局状态。
-        self.cache_steps = 6
+        # self.cache_steps = 6
         # 初始化棋局状态
         self.pos = Position(initial)
         # 初始化历史棋局状态
@@ -27,7 +27,14 @@ class CnChessEnv(gym.Env):
         # 每个位置的得分范围为 -7 到 7
         # 6 是缓存步数，10 是棋盘行数，9 是棋盘列数
         # 1-7 代表红方棋子，-1- -7 代表黑方棋子，0 代表空位
-        self.observation_space = spaces.Box(-7, 7, (self.cache_steps, 10, 9))  # board 8x8
+        main_observation_space = spaces.Box(-7, 7, (10, 9))  # board 8x8
+
+
+        self.observation_space = spaces.Dict({
+            "observation": main_observation_space,
+            "action_mask": spaces.Box(0, 1, (90 * 90,), dtype=bool)
+        })
+
         
         # 棋盘的笛卡尔积 + 投降
         # 在中国象棋中，棋盘是 9 10 的
@@ -49,17 +56,28 @@ class CnChessEnv(gym.Env):
         self.window = None
         self.clock = None
     
-    # 生成观察空间，前 N 步的棋盘状态
-    def generate_observation(self) -> np.ndarray:
-        observation = np.zeros([self.cache_steps, 10, 9])
-        for i, one_pos in enumerate(self.his[::-1][:self.cache_steps]):
-            # 如果 i 是偶数，则将当前位置的棋盘状态转换为 numpy 数组并存储在 observation 中
-            if i % 2 == 0:
-                observation[i] = Position(one_pos).to_numpy()
-            else:
-                # 如果 i 是奇数，则将当前位置的棋盘状态旋转 180 度后转换为 numpy 数组并存储在 observation 中
-                observation[i] = Position(one_pos).rotate().to_numpy()
-        return observation
+    # 生成观察空间
+    def generate_observation(self) -> dict[str, np.ndarray]:
+        # observation = np.zeros([self.cache_steps, 10, 9])
+        # for i, one_pos in enumerate(self.his[::-1][:self.cache_steps]):
+        #     # 如果 i 是偶数，则将当前位置的棋盘状态转换为 numpy 数组并存储在 observation 中
+        #     if i % 2 == 0:
+        #         observation[i] = Position(one_pos).to_numpy()
+        #     else:
+        #         # 如果 i 是奇数，则将当前位置的棋盘状态旋转 180 度后转换为 numpy 数组并存储在 observation 中
+        #         observation[i] = Position(one_pos).rotate().to_numpy()
+
+        observation = self.pos.to_numpy()
+        possible_actions = self.get_possible_actions()
+        # 创建一个全 0 的数组，用于表示所有可能的行动
+        action_mask = np.zeros(90 * 90, dtype=bool)
+        # 将可能的行动的索引设置为 True
+        action_mask[possible_actions] = True
+
+        return {
+            "observation": observation,
+            "action_mask": action_mask,
+        }
     
     def reset(self, *,
               seed: int | None = None,

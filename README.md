@@ -8,8 +8,14 @@
 ## 安装
 
 ```bash
-pip install gymnasium
+pip install -e .
 ```
 
-## todo
+
+## 使用
+```py
+
+import gymnasium as gym
+chinese_chess_ env = gym.make('gym_cn_chess/CnChess-v0')
+```
 
