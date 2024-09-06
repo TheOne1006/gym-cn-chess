@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gym_cn_chess"
+version = "0.0.1"
+description = "基于 gymnasium 的象棋环境"
+authors = [{name = "theone", email = "theone@theone.io"}]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "numpy",
+    "pygame",
+    "gymnasium~=0.29.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.3.2",
+]
+
+[tool.setuptools]
+packages = ["gym_cn_chess"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -67,7 +67,8 @@ class CnChessEnv(gym.Env):
         #         # 如果 i 是奇数，则将当前位置的棋盘状态旋转 180 度后转换为 numpy 数组并存储在 observation 中
         #         observation[i] = Position(one_pos).rotate().to_numpy()
 
-        observation = self.pos.to_numpy()
+        # to float 32
+        observation = self.pos.to_numpy().astype(np.float32)
         possible_actions = self.get_possible_actions()
         # 创建一个全 0 的数组，用于表示所有可能的行动
         action_mask = np.zeros(90 * 90, dtype=bool)
