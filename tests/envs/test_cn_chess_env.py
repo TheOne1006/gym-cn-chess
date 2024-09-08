@@ -13,14 +13,10 @@ class TestCnChessEnv:
     
     def test_generate_observation(self, env):
         """测试生成观察空间的方法"""
-        all_observation = env.generate_observation()
-        observation = all_observation["observation"]
-        action_mask = all_observation["action_mask"]
-        assert observation.shape == (10, 9)
+        observation = env.generate_observation()
+        assert observation.shape == (91, 10, 9)
         assert (observation >= -7).all()
         assert (observation <= 7).all()
-        assert action_mask.shape == (90 * 90,)
-        assert action_mask.dtype == bool
     
     def test_step(self, env):
         """测试 step 方法的行为"""

@@ -29,13 +29,10 @@ class CnChessEnv(gym.Env):
         # 1-7 代表红方棋子，-1- -7 代表黑方棋子，0 代表空位
         main_observation_space = spaces.Box(-7, 7, (10, 9))  # board 8x8
 
+        self.observation_space = spaces.Box(
+            -7, 7, (91, 10, 9)
+        )
 
-        self.observation_space = spaces.Dict({
-            "observation": main_observation_space,
-            "action_mask": spaces.Box(0, 1, (90 * 90,), dtype=bool)
-        })
-
-        
         # 棋盘的笛卡尔积 + 投降
         # 在中国象棋中，棋盘是 9 10 的
         # 90 来自于 9x10，代表棋盘上的任意一个位置。
@@ -57,7 +54,7 @@ class CnChessEnv(gym.Env):
         self.clock = None
     
     # 生成观察空间
-    def generate_observation(self) -> dict[str, np.ndarray]:
+    def generate_observation(self) -> np.ndarray:
         # observation = np.zeros([self.cache_steps, 10, 9])
         # for i, one_pos in enumerate(self.his[::-1][:self.cache_steps]):
         #     # 如果 i 是偶数，则将当前位置的棋盘状态转换为 numpy 数组并存储在 observation 中
@@ -68,17 +65,28 @@ class CnChessEnv(gym.Env):
         #         observation[i] = Position(one_pos).rotate().to_numpy()
 
         # to float 32
-        observation = self.pos.to_numpy().astype(np.float32)
-        possible_actions = self.get_possible_actions()
+        observation = self.pos.to_numpy().astype(np.int8)
+        _, possible_actions = self.get_possible_moves()
         # 创建一个全 0 的数组，用于表示所有可能的行动
-        action_mask = np.zeros(90 * 90, dtype=bool)
-        # 将可能的行动的索引设置为 True
-        action_mask[possible_actions] = True
+        action_mask = np.zeros((90, 10, 9), dtype=np.int8)
+        
+        # 将可能的行动的索引设置为 1
+        offset_x, offset_y = 3, 3
+        for from_coord, to_coord in possible_actions:
+            # to_coord 转成 9 * 10 坐标
+            from_coord_index = divmod(from_coord, 16)
+            from_coord_y, from_coord_x = from_coord_index[0] - offset_y, from_coord_index[1] - offset_x
+            to_coord_index = divmod(to_coord, 16)
+            to_coord_y, to_coord_x = to_coord_index[0] - offset_y, to_coord_index[1] - offset_x
+            
+            # mask 切片索引
+            from_index = from_coord_x * 10 + from_coord_y
+            action_mask[from_index, to_coord_y, to_coord_x] = 1
 
-        return {
-            "observation": observation,
-            "action_mask": action_mask,
-        }
+        # observation （10， 9） 与 action_mask (90, 10, 9) 合并
+        concat_observation = np.concatenate([np.expand_dims(observation, axis=0), action_mask], axis=0)
+        
+        return concat_observation
     
     def reset(self, *,
               seed: int | None = None,
@@ -258,10 +266,10 @@ class CnChessEnv(gym.Env):
             return move_int
     
     def get_possible_actions(self):
-        moves = self.get_possible_moves()
+        moves, _ = self.get_possible_moves()
         return [self.move_to_action(m) for m in moves]
     
-    def get_possible_moves(self) -> list[str]:
+    def get_possible_moves(self) -> Tuple[list[str], list[tuple[int, int]]]:
         """
         获取当前玩家可能的移动
         str: <from_cord><to_cord>
@@ -269,18 +277,23 @@ class CnChessEnv(gym.Env):
         if self.current_player == 0 or self.current_player == 1:
             # 红方情况
             moves = []
+            move_cords = []
             for from_cord, to_cord in self.pos.gen_moves():
+                move_cords.append((from_cord, to_cord))
                 one_move = self.cord2str(from_cord) + self.cord2str(to_cord)
                 moves.append(one_move)
         else:
             raise RuntimeError(f"player {self.current_player} not recognized")
+        
         if not self.pos.player_has_king():
             # 如果将军已经被吃掉，那么输了，同样返回空的move数组
             moves = []
+            move_cords = []
         elif self.resigned[self.current_player]:
             # 如果已经投降或者议和，返回空的move数组
             moves = []
+            move_cords = []
         else:
             pass
             # moves.append("resign")
-        return moves
+        return moves, move_cords
