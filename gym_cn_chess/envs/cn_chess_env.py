@@ -66,26 +66,25 @@ class CnChessEnv(gym.Env):
 
         # to float 32
         observation = self.pos.to_numpy().astype(np.int8)
-        _, possible_actions = self.get_possible_moves()
-        # 创建一个全 0 的数组，用于表示所有可能的行动
-        action_mask = np.zeros((90, 10, 9), dtype=np.int8)
+        possible_actions = self.get_possible_actions()
         
-        # 将可能的行动的索引设置为 1
-        offset_x, offset_y = 3, 3
-        for from_coord, to_coord in possible_actions:
-            # to_coord 转成 9 * 10 坐标
-            from_coord_index = divmod(from_coord, 16)
-            from_coord_y, from_coord_x = from_coord_index[0] - offset_y, from_coord_index[1] - offset_x
-            to_coord_index = divmod(to_coord, 16)
-            to_coord_y, to_coord_x = to_coord_index[0] - offset_y, to_coord_index[1] - offset_x
+        # 创建一个全 0 的数组，用于表示所有可能的行动
+        action_mask_flatten = np.zeros((90 * 90), dtype=np.int8)
+        
+        # 根据 possible_actions 更新 action_mask
+        for action in possible_actions:
+            action_mask_flatten[action] = 1
             
-            # mask 切片索引
-            from_index = from_coord_x * 10 + from_coord_y
-            action_mask[from_index, to_coord_y, to_coord_x] = 1
+        # action_mask reshape
+        action_mask = action_mask_flatten.reshape((90, 10, 9))
 
+        # observation 翻转
+        observation = observation[::-1]
         # observation （10， 9） 与 action_mask (90, 10, 9) 合并
         concat_observation = np.concatenate([np.expand_dims(observation, axis=0), action_mask], axis=0)
         
+        # 将 concat_observation 第二维度 倒序排列
+        # concat_observation = concat_observation[:, ::-1, :]
         return concat_observation
     
     def reset(self, *,
@@ -266,10 +265,10 @@ class CnChessEnv(gym.Env):
             return move_int
     
     def get_possible_actions(self):
-        moves, _ = self.get_possible_moves()
+        moves = self.get_possible_moves()
         return [self.move_to_action(m) for m in moves]
     
-    def get_possible_moves(self) -> Tuple[list[str], list[tuple[int, int]]]:
+    def get_possible_moves(self) -> list[str]:
         """
         获取当前玩家可能的移动
         str: <from_cord><to_cord>
@@ -277,9 +276,7 @@ class CnChessEnv(gym.Env):
         if self.current_player == 0 or self.current_player == 1:
             # 红方情况
             moves = []
-            move_cords = []
             for from_cord, to_cord in self.pos.gen_moves():
-                move_cords.append((from_cord, to_cord))
                 one_move = self.cord2str(from_cord) + self.cord2str(to_cord)
                 moves.append(one_move)
         else:
@@ -288,12 +285,10 @@ class CnChessEnv(gym.Env):
         if not self.pos.player_has_king():
             # 如果将军已经被吃掉，那么输了，同样返回空的move数组
             moves = []
-            move_cords = []
         elif self.resigned[self.current_player]:
             # 如果已经投降或者议和，返回空的move数组
             moves = []
-            move_cords = []
         else:
             pass
             # moves.append("resign")
-        return moves, move_cords
+        return moves

@@ -17,14 +17,20 @@ class TestCnChessEnv:
         assert observation.shape == (91, 10, 9)
         assert (observation >= -7).all()
         assert (observation <= 7).all()
+
+    def test_get_possible_actions(self, env):
+        """测试获取可能动作的方法"""
+        moves, coords = env.get_possible_moves()
+        assert isinstance(moves, list)
+
     
     def test_step(self, env):
         """测试 step 方法的行为"""
         # 假设 action 对应一个有效的移动
         actions = env.get_possible_actions()
         # 执行 step 并检查返回值类型
-        observation, reward, terminated, truncated, info = env.step(actions[0])
-        assert isinstance(observation, dict)
+        observation, reward, terminated, truncated, info = env.step(actions[29])
+        assert isinstance(observation, np.ndarray)
         assert isinstance(reward, int)
         assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
