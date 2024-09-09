@@ -87,6 +87,16 @@ class CnChessEnv(gym.Env):
         # concat_observation = concat_observation[:, ::-1, :]
         return concat_observation
     
+    def generate_info(self, value_diff: int = 0) -> dict:
+        result = {
+            "history": self.get_history_positions(),
+            "value": value_diff,
+            "is_red_player": self.current_player == 0,
+            "is_black_player": self.current_player == 1,
+        }
+
+        return result
+
     def reset(self, *,
               seed: int | None = None,
               options: dict[str, Any] | None = None) -> Tuple[np.ndarray, dict]:
@@ -99,10 +109,7 @@ class CnChessEnv(gym.Env):
         self.resigned = [False, False]
         self.board_count = {}
         
-        info = {
-            "history": [],
-            "value": 0,
-        }
+        info = self.generate_info()
         if self.render_mode == "human":
             self._render_frame()
         
@@ -126,7 +133,7 @@ class CnChessEnv(gym.Env):
             self.resigned[self.current_player] = True
             reward = -1
             terminated = True
-            info = {"history": self.get_history_positions()}
+            info = self.generate_info()
             truncated = False
             return self.generate_observation(), reward, terminated, truncated, info
         else:
@@ -172,10 +179,7 @@ class CnChessEnv(gym.Env):
             # 交换红黑方
             self.current_player = 1 - self.current_player
             
-            info = {
-                "history": self.get_history_positions(),
-                "value": value_diff,
-            }
+            info = self.generate_info(value_diff)
             
             if self.render_mode == "human":
                 self._render_frame()
