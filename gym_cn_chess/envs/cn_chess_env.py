@@ -27,10 +27,15 @@ class CnChessEnv(gym.Env):
         # 每个位置的得分范围为 -7 到 7
         # 6 是缓存步数，10 是棋盘行数，9 是棋盘列数
         # 1-7 代表红方棋子，-1- -7 代表黑方棋子，0 代表空位
-        main_observation_space = spaces.Box(-7, 7, (10, 9))  # board 8x8
-
-        self.observation_space = spaces.Box(
-            -7, 7, (91, 10, 9)
+        self.observation_space = spaces.Dict(
+            {
+                "board": spaces.Box(
+                    -7, 7, (1, 10, 9)
+                ),
+                "board_mask": spaces.Box(
+                    -7, 7, (91, 10, 9)
+                )
+            }
         )
 
         # 棋盘的笛卡尔积 + 投降
@@ -54,7 +59,7 @@ class CnChessEnv(gym.Env):
         self.clock = None
     
     # 生成观察空间
-    def generate_observation(self) -> np.ndarray:
+    def generate_observation(self) -> dict[str, np.ndarray]:
         # observation = np.zeros([self.cache_steps, 10, 9])
         # for i, one_pos in enumerate(self.his[::-1][:self.cache_steps]):
         #     # 如果 i 是偶数，则将当前位置的棋盘状态转换为 numpy 数组并存储在 observation 中
@@ -69,23 +74,23 @@ class CnChessEnv(gym.Env):
         possible_actions = self.get_possible_actions()
         
         # 创建一个全 0 的数组，用于表示所有可能的行动
-        action_mask_flatten = np.zeros((90 * 90), dtype=np.int8)
+        board_mask_flatten = np.zeros((90 * 90), dtype=np.int8)
         
         # 根据 possible_actions 更新 action_mask
         for action in possible_actions:
-            action_mask_flatten[action] = 1
+            board_mask_flatten[action] = 1
             
-        # action_mask reshape
-        action_mask = action_mask_flatten.reshape((90, 10, 9))
+        # board_mask reshape
+        board_mask = board_mask_flatten.reshape((90, 10, 9))
 
         # observation 翻转
         observation = observation[::-1]
-        # observation （10， 9） 与 action_mask (90, 10, 9) 合并
-        concat_observation = np.concatenate([np.expand_dims(observation, axis=0), action_mask], axis=0)
         
-        # 将 concat_observation 第二维度 倒序排列
-        # concat_observation = concat_observation[:, ::-1, :]
-        return concat_observation
+        return {
+            "board": np.expand_dims(observation, axis=0).astype(np.float32),
+            "board_mask": board_mask.astype(np.float32),
+            "possible_actions": possible_actions,
+        }
     
     def generate_info(self, value_diff: int = 0) -> dict:
         result = {

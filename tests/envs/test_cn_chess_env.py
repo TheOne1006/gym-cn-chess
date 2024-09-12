@@ -14,9 +14,10 @@ class TestCnChessEnv:
     def test_generate_observation(self, env):
         """测试生成观察空间的方法"""
         observation = env.generate_observation()
-        assert observation.shape == (91, 10, 9)
-        assert (observation >= -7).all()
-        assert (observation <= 7).all()
+        assert observation['board'].shape == (1, 10, 9)
+        assert observation['board_mask'].shape == (90, 10, 9)
+        assert (observation['board'] >= -7).all()
+        assert (observation['board'] <= 7).all()
 
     def test_get_possible_actions(self, env):
         """测试获取可能动作的方法"""
@@ -30,7 +31,7 @@ class TestCnChessEnv:
         actions = env.get_possible_actions()
         # 执行 step 并检查返回值类型
         observation, reward, terminated, truncated, info = env.step(actions[29])
-        assert isinstance(observation, np.ndarray)
+        assert isinstance(observation, dict)
         assert isinstance(reward, int)
         assert isinstance(terminated, bool)
         assert isinstance(truncated, bool)
