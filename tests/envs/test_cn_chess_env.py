@@ -14,6 +14,8 @@ class TestCnChessEnv:
     def test_generate_observation(self, env):
         """测试生成观察空间的方法"""
         observation = env.generate_observation()
+        assert isinstance(observation, dict)
+        assert isinstance(observation['possible_actions'], list)
         assert observation['board'].shape == (1, 10, 9)
         assert observation['board_mask'].shape == (90, 10, 9)
         assert (observation['board'] >= -7).all()
