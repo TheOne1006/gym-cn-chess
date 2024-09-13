@@ -15,7 +15,7 @@ class TestCnChessEnv:
         """测试生成观察空间的方法"""
         observation = env.generate_observation()
         assert isinstance(observation, dict)
-        assert isinstance(observation['possible_actions'], list)
+        assert isinstance(observation['possible_actions'], np.ndarray)
         assert observation['board'].shape == (1, 10, 9)
         assert observation['board_mask'].shape == (90, 10, 9)
         assert (observation['board'] >= -7).all()
@@ -23,7 +23,7 @@ class TestCnChessEnv:
 
     def test_get_possible_actions(self, env):
         """测试获取可能动作的方法"""
-        moves, coords = env.get_possible_moves()
+        moves = env.get_possible_moves()
         assert isinstance(moves, list)
 
     
