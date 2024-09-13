@@ -34,7 +34,9 @@ class CnChessEnv(gym.Env):
                 ),
                 "board_mask": spaces.Box(
                     -7, 7, (91, 10, 9)
-                )
+                ),
+                # possible_actions is list[int]
+                "possible_actions": spaces.Box(0, 1, (90 * 90,)),
             }
         )
 
@@ -74,7 +76,7 @@ class CnChessEnv(gym.Env):
         possible_actions = self.get_possible_actions()
         
         # 创建一个全 0 的数组，用于表示所有可能的行动
-        board_mask_flatten = np.zeros((90 * 90), dtype=np.int8)
+        board_mask_flatten = np.zeros((90 * 90), dtype=np.float32)
         
         # 根据 possible_actions 更新 action_mask
         for action in possible_actions:
@@ -89,7 +91,7 @@ class CnChessEnv(gym.Env):
         return {
             "board": np.expand_dims(observation, axis=0).astype(np.float32),
             "board_mask": board_mask.astype(np.float32),
-            "possible_actions": possible_actions,
+            "possible_actions": board_mask_flatten,
         }
     
     def generate_info(self, value_diff: int = 0) -> dict:
